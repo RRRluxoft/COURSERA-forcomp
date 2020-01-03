@@ -35,12 +35,11 @@ object Anagrams {
    *  Note: you must use `groupBy` to implement this method!
    */
   def wordOccurrences(w: Word): Occurrences = {
-    w.toLowerCase.//split(" ").
-    groupBy(e => e).mapValues(_.length).toList.sorted
+    w.toLowerCase.groupBy(identity).mapValues(_.length).toList.sorted
   }
 
   /** Converts a sentence into its character occurrence list. */
-  def sentenceOccurrences(s: Sentence): Occurrences = s.flatMap(wordOccurrences)
+  def sentenceOccurrences(s: Sentence): Occurrences = wordOccurrences(s.foldLeft("")(_ + _))
 
   /** The `dictionaryByOccurrences` is a `Map` from different occurrences to a sequence of all
    *  the words that have that occurrence count.
@@ -150,13 +149,15 @@ object Anagrams {
     anagramm(sentenceOccurrences(sentence))
   }
 
-  def anagramm(occurences: Occurrences): List[Sentence] = {
-    if (occurences.isEmpty) List(Nil)
-    else {
+  def anagramm(occurences: Occurrences): List[Sentence] = occurences match {
+    case Nil => List(Nil)
+    case occurences => {
       val combs = combinations(occurences)
-      for (comb <- combs if dictionaryByOccurrences.keySet(comb);
-           xs <- dictionaryByOccurrences(comb);
-           ys <- anagramm(subtract(occurences, comb))) yield xs :: ys
+      for {
+        comb <- combs if dictionaryByOccurrences.contains(comb)
+        xs   <- dictionaryByOccurrences(comb)
+        ys   <- anagramm(subtract(occurences, comb))
+      } yield (xs :: ys)
     }
   }
 
